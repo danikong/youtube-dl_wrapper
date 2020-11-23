@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+import os
+import subprocess
+import argparse
+
+
+parser = argparse.ArgumentParser(description='Uses youtube-dt to standardize the download.')
+parser.add_argument('-p', help='If a playlist is given, it will download it into a seperate single folder.', action="store_true")
+
+gr_dir= parser.add_mutually_exclusive_group()
+gr_dir.add_argument('-d', help='Downloads video to a folder \'doku\' in the default or given folder.', action="store_true")
+gr_dir.add_argument('-m', help='Stores video under dedicated music folder.', action="store_true")
+gr_dir.add_argument('-e', type=str, help='Stores video in given folder.')
+
+gr_qty = parser.add_mutually_exclusive_group()
+gr = gr_qty.add_argument_group()
+gr.add_argument('-a', help='Stores only audio of file.', action="store_true")
+gr.add_argument('--verbose', help='Adds the verbose flag.', action="store_true")
+gr.add_argument('--fps', type=int, default='30', help='Set the maximum FPS for the best resolution.')
+gr.add_argument('--height', type=int, default='1080', help='Set the maximum limit for the best resolution.')
+
+
+#parser.add_argument('-a', help='Stores only audio of file.', action="store_true")
+#parser.add_argument('--fps', type=int, default='30', help='Set the maximum FPS for the best resolution.')
+#parser.add_argument('--height', type=int, default='1080', help='Set the maximum limit for the best resolution.')
+
+gr_qty.add_argument('-f', type=str, help='Download specific VIDEO+AUDIO format.')
+
+
+
+parser.add_argument('-r', help='Deactivate the filename restriction to certain characters.', action="store_true")
+parser.add_argument('urls', nargs='*', type=str, help='URL to the youtube video.')
+
+parser.add_argument('--verb', action='store_true', help='Starts youtube-dl with output.')
+
+
+args=parser.parse_args()
+urls = args.urls
+
+
+argumentlist = []
+
+fps = args.fps
+height = args.height
+
+if args.f:
+    argumentlist.append('-f ' + args.f)
+elif args.a:
+    vid_qty = "'bestaudio/best'"
+    argumentlist.append("-x") 
+    argumentlist.append(" --audio-format mp3")
+else:
+    vid_qty = "'bestvideo[height<=?{}][fps<=?{}]+bestaudio/best'".format(height, fps)
+argumentlist.append('-f ' + vid_qty)
+
+if args.verbose:
+    argumentlist.append('--verbose')
+
+path = '~/yt/'
+if args.d:
+    path += 'doku/'
+elif args.m:
+    path += 'music/'
+elif args.e:
+    path += args.e + '/'
+
+if args.p:
+    path += "'%(playlist)s/%(playlist_index)s_-_%(title)s.%(ext)s'"
+else:
+    path += "'%(title)s.%(ext)s'"
+argumentlist.append('-o ' + path)
+
+
+if not args.r:
+    argumentlist.append('--restrict-filenames')
+
+
+
+argumentlist.append('--rm-cache-dir')
+
+
+#argumentlist.append(args.url)
+for url in urls:
+    op_exe = 'youtube-dl ' + ' '.join(argumentlist) + ' ' + url
+    print(op_exe)
+    if args.verb:
+        os.system(op_exe + ' &')
+    else:
+        os.system(op_exe + ' > /dev/null 2>&1 &')
+
